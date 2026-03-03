@@ -1,0 +1,17 @@
+{
+  "name": "sistema-reservas-medicas",
+  "version": "1.0.0",
+  "description": "Sistema de gestión de reservas de citas médicas - Prueba de concepto con Arquitectura Hexagonal",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "node --watch src/index.js",
+    "test": "node --test src/**/*.test.js"
+  },
+  "keywords": ["hexagonal", "architecture", "medical", "appointments", "reservas"],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "express": "^4.18.2"
+  }
+}

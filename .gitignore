@@ -1,0 +1,9 @@
+node_modules/
+.env
+*.log
+.DS_Store
+
+# Documentos del proyecto (no subir al repo)
+documento-proyecto.md
+documento-proyecto.pdf
+INSTRUCCIONES-PDF.md
