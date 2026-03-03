@@ -183,17 +183,20 @@
       <h2>Nueva reserva</h2>
       <form id="formReserva">
         <div class="form-grid">
-          <div class="form-group">
-            <label for="pacienteId">ID Paciente</label>
-            <input type="text" id="pacienteId" placeholder="P001" required>
-          </div>
           <div class="form-group full">
             <label for="pacienteNombre">Nombre del paciente</label>
             <input type="text" id="pacienteNombre" placeholder="Juan Pérez" required>
           </div>
-          <div class="form-group">
-            <label for="medicoId">ID Médico</label>
-            <input type="text" id="medicoId" placeholder="M001" required>
+          <div class="form-group full">
+            <label for="medicoId">Seleccione el médico</label>
+            <select id="medicoId" required>
+              <option value="">-- Elija un médico --</option>
+              <option value="M001">Dr. Carlos García — Medicina general</option>
+              <option value="M002">Dra. María López — Pediatría</option>
+              <option value="M003">Dr. Andrés Martínez — Traumatología</option>
+              <option value="M004">Dra. Laura Rodríguez — Dermatología</option>
+              <option value="M005">Dr. Pedro Sánchez — Cardiología</option>
+            </select>
           </div>
           <div class="form-group">
             <label for="fecha">Fecha</label>
@@ -280,10 +283,12 @@
 
     document.getElementById('formReserva').addEventListener('submit', async (e) => {
       e.preventDefault();
+      // ID del paciente se genera automáticamente (el usuario no lo escribe)
+      const pacienteId = 'P-' + Date.now();
       const datos = {
-        pacienteId: document.getElementById('pacienteId').value.trim(),
+        pacienteId,
         pacienteNombre: document.getElementById('pacienteNombre').value.trim(),
-        medicoId: document.getElementById('medicoId').value.trim(),
+        medicoId: document.getElementById('medicoId').value,
         fecha: document.getElementById('fecha').value,
         hora: document.getElementById('hora').value,
         motivo: document.getElementById('motivo').value.trim() || 'Consulta general'
