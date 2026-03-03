@@ -11,7 +11,7 @@ class Reserva {
     this.medicoId = medicoId;
     this.fecha = fecha;
     this.hora = hora;
-    this.motivo = motivo;
+    this.motivo = motivo && motivo.trim() ? motivo.trim() : 'Consulta general';
     this.estado = estado;
     this.creadaEn = creadaEn || new Date().toISOString();
   }
