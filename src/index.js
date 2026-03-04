@@ -1,26 +1,51 @@
 /**
  * Punto de entrada - Composición de la aplicación
- * Aquí se ensamblan los adaptadores con el núcleo (inyección de dependencias)
  */
 const express = require('express');
-const ReservaRepositoryInMemory = require('./infrastructure/adapters/ReservaRepositoryInMemory');
-const ReservaService = require('./application/services/ReservaService');
-const createReservasRouter = require('./infrastructure/http/routes/reservasRoutes');
-
-// Composición: crear adaptadores e inyectar en el servicio
-const reservaRepository = new ReservaRepositoryInMemory();
-const reservaService = new ReservaService(reservaRepository);
-
+const session = require('express-session');
 const path = require('path');
+const bcrypt = require('bcryptjs');
+
+const ReservaRepositoryInMemory = require('./infrastructure/adapters/ReservaRepositoryInMemory');
+const UsuarioRepositoryInMemory = require('./infrastructure/adapters/UsuarioRepositoryInMemory');
+const ReservaService = require('./application/services/ReservaService');
+const AuthService = require('./application/services/AuthService');
+const createReservasRouter = require('./infrastructure/http/routes/reservasRoutes');
+const createAuthRouter = require('./infrastructure/http/routes/authRoutes');
+const requireAuth = require('./infrastructure/http/middleware/requireAuth');
+
+// Composición
+const reservaRepository = new ReservaRepositoryInMemory();
+const usuarioRepository = new UsuarioRepositoryInMemory();
+const reservaService = new ReservaService(reservaRepository);
+const authService = new AuthService(usuarioRepository);
 
 const app = express();
 app.use(express.json());
+app.use(session({
+  secret: 'reservas-medicas-secret',
+  resave: false,
+  saveUninitialized: false,
+  cookie: { secure: false, maxAge: 24 * 60 * 60 * 1000 }
+}));
 
-// Interfaz web estática
+// Rutas públicas
+app.use('/api/auth', createAuthRouter(authService));
+
+// Proteger dashboard: redirigir a login si no hay sesión (antes de static)
+app.get('/', (req, res, next) => {
+  if (!req.session?.usuario) return res.redirect('/login.html');
+  next();
+});
+app.get('/index.html', (req, res, next) => {
+  if (!req.session?.usuario) return res.redirect('/login.html');
+  next();
+});
+
 app.use(express.static(path.join(__dirname, '../public')));
 
-// Montar rutas API
-app.use('/api/reservas', createReservasRouter(reservaService));
+// API protegida
+app.use('/api/reservas', requireAuth, createReservasRouter(reservaService));
 
 // API info (para clientes que consulten /api)
 app.get('/api', (req, res) => {
@@ -29,7 +54,7 @@ app.get('/api', (req, res) => {
     arquitectura: 'Hexagonal (Ports and Adapters)',
     endpoints: {
       'POST /api/reservas': 'Crear reserva',
-      'GET /api/reservas': 'Listar reservas',
+      'GET /api/reservas': 'Listar reservas (?estado=CONFIRMADA|CANCELADA para filtrar)',
       'GET /api/reservas/:id': 'Obtener reserva',
       'DELETE /api/reservas/:id': 'Cancelar reserva'
     }
@@ -37,6 +62,20 @@ app.get('/api', (req, res) => {
 });
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-  console.log(`Servidor en http://localhost:${PORT}`);
-});
+
+async function iniciar() {
+  const Usuario = require('./domain/entities/Usuario');
+  const hash = await bcrypt.hash('admin123', 10);
+  await usuarioRepository.guardar(new Usuario({
+    id: 'u1',
+    email: 'admin@test.com',
+    nombre: 'Administrador',
+    passwordHash: hash
+  }));
+  app.listen(PORT, () => {
+    console.log(`Servidor en http://localhost:${PORT}`);
+    console.log('Usuario demo: admin@test.com / admin123');
+  });
+}
+
+iniciar();

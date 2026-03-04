@@ -31,8 +31,12 @@ class ReservaService {
     return reserva;
   }
 
-  async listarReservas() {
-    return this.reservaRepository.listarTodas();
+  async listarReservas(estado = null) {
+    const reservas = await this.reservaRepository.listarTodas();
+    if (estado) {
+      return reservas.filter(r => r.estado === estado);
+    }
+    return reservas;
   }
 
   async cancelarReserva(id) {

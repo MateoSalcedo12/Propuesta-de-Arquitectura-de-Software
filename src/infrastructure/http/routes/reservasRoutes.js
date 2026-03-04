@@ -18,7 +18,8 @@ function createReservasRouter(reservaService) {
 
   router.get('/', async (req, res) => {
     try {
-      const reservas = await reservaService.listarReservas();
+      const estado = req.query.estado || null; // ?estado=CONFIRMADA | ?estado=CANCELADA
+      const reservas = await reservaService.listarReservas(estado);
       res.json(reservas);
     } catch (error) {
       res.status(500).json({ error: error.message });

@@ -1,0 +1,14 @@
+---
+description: Estructura hexagonal del proyecto - seguir siempre
+globs: src/**/*
+---
+
+# Estructura Hexagonal — OBLIGATORIO
+
+Al modificar código en `src/`, respetar la arquitectura:
+
+- **domain/**: Solo entidades y puertos (interfaces). Sin Express, sin BD.
+- **application/**: Casos de uso. Usa puertos, no implementaciones.
+- **infrastructure/**: Adaptadores que implementan puertos. Rutas HTTP, repositorios.
+
+El dominio NO debe depender de infraestructura.

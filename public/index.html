@@ -38,15 +38,9 @@
       </a>
     </div>
     <div class="flex-none gap-2">
-      <button class="btn btn-ghost btn-circle">
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
-        </svg>
-      </button>
-      <div class="avatar placeholder">
-        <div class="bg-primary text-primary-content rounded-full w-10">
-          <span class="text-lg font-semibold">L</span>
-        </div>
+      <div class="flex items-center gap-2">
+        <span class="text-sm text-base-content/70" id="nombreUsuario"></span>
+        <button type="button" id="btnLogout" class="btn btn-ghost btn-sm">Cerrar sesión</button>
       </div>
     </div>
   </div>
@@ -126,13 +120,18 @@
       <div class="card bg-base-100 shadow-xl">
         <div class="card-body">
           <div class="flex justify-between items-center mb-4">
-            <h2 class="card-title text-xl">Reservas existentes</h2>
+            <h2 class="card-title text-xl">Reservas y historial</h2>
             <button type="button" class="btn btn-sm btn-ghost gap-1" onclick="cargarReservas()">
               <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
               </svg>
               ACTUALIZAR
             </button>
+          </div>
+          <div class="flex gap-2 mb-4 flex-wrap">
+            <button type="button" id="btnTodas" class="btn btn-sm btn-primary" onclick="cambiarFiltro('')">Todas</button>
+            <button type="button" id="btnActivas" class="btn btn-sm btn-ghost" onclick="cambiarFiltro('CONFIRMADA')">Activas</button>
+            <button type="button" id="btnHistorial" class="btn btn-sm btn-ghost" onclick="cambiarFiltro('CANCELADA')">Historial (canceladas)</button>
           </div>
           <ul id="listaReservas" class="space-y-3 min-h-[200px]">
             <li class="flex flex-col items-center justify-center py-12 text-center">
@@ -143,7 +142,7 @@
               <p class="text-sm text-base-content/50 mt-1">Las citas médicas aparecerán aquí automáticamente.</p>
             </li>
           </ul>
-          <div class="grid grid-cols-2 gap-4 mt-6 pt-6 border-t border-base-200">
+          <div class="grid grid-cols-3 gap-4 mt-6 pt-6 border-t border-base-200">
             <div class="stat bg-base-200 rounded-lg py-4 px-4">
               <p class="stat-desc text-xs font-medium opacity-70">TOTAL HOY</p>
               <p id="totalHoy" class="stat-value text-2xl">0</p>
@@ -151,6 +150,10 @@
             <div class="stat bg-base-200 rounded-lg py-4 px-4">
               <p class="stat-desc text-xs font-medium opacity-70">PENDIENTES</p>
               <p id="pendientes" class="stat-value text-2xl">0</p>
+            </div>
+            <div class="stat bg-base-200 rounded-lg py-4 px-4">
+              <p class="stat-desc text-xs font-medium opacity-70">CANCELADAS</p>
+              <p id="canceladas" class="stat-value text-2xl">0</p>
             </div>
           </div>
         </div>
@@ -162,6 +165,18 @@
   <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/es.js"></script>
   <script>
     const API_BASE = '/api/reservas';
+    let filtroReservas = ''; // '' = todas, 'CONFIRMADA' = activas, 'CANCELADA' = historial
+
+    function cambiarFiltro(estado) {
+      filtroReservas = estado;
+      ['btnTodas', 'btnActivas', 'btnHistorial'].forEach((id, i) => {
+        const btn = document.getElementById(id);
+        const activo = (i === 0 && !estado) || (i === 1 && estado === 'CONFIRMADA') || (i === 2 && estado === 'CANCELADA');
+        btn.className = activo ? 'btn btn-sm btn-primary' : 'btn btn-sm btn-ghost';
+      });
+      cargarReservas();
+    }
+
     const MEDICOS = {
       'M001': 'Dr. Carlos García',
       'M002': 'Dra. María López',
@@ -181,20 +196,22 @@
       setTimeout(() => el.classList.add('hidden'), 5000);
     }
 
-    function actualizarEstadisticas(reservas) {
+    function actualizarEstadisticas(todasLasReservas) {
       const hoy = new Date().toISOString().split('T')[0];
-      const totalHoy = reservas.filter(r => r.fecha === hoy).length;
-      const pendientes = reservas.filter(r => r.estado === 'CONFIRMADA').length;
-      document.getElementById('totalHoy').textContent = totalHoy;
-      document.getElementById('pendientes').textContent = pendientes;
+      document.getElementById('totalHoy').textContent = todasLasReservas.filter(r => r.fecha === hoy).length;
+      document.getElementById('pendientes').textContent = todasLasReservas.filter(r => r.estado === 'CONFIRMADA').length;
+      document.getElementById('canceladas').textContent = todasLasReservas.filter(r => r.estado === 'CANCELADA').length;
     }
 
     async function cargarReservas() {
       const lista = document.getElementById('listaReservas');
       try {
         const res = await fetch(API_BASE);
-        const reservas = await res.json();
-        actualizarEstadisticas(reservas);
+        const todasLasReservas = await res.json();
+        actualizarEstadisticas(todasLasReservas);
+        const reservas = filtroReservas
+          ? todasLasReservas.filter(r => r.estado === filtroReservas)
+          : todasLasReservas;
         if (reservas.length === 0) {
           lista.innerHTML = `
             <li class="flex flex-col items-center justify-center py-12 text-center">
@@ -304,6 +321,17 @@
       allowInput: false,
       onChange: () => document.getElementById('fecha').setCustomValidity('')
     });
+
+    // Usuario y logout
+    fetch('/api/auth/me')
+      .then(r => r.ok ? r.json() : null)
+      .then(u => {
+        if (u) document.getElementById('nombreUsuario').textContent = u.nombre || u.email;
+      });
+    document.getElementById('btnLogout').onclick = async () => {
+      await fetch('/api/auth/logout', { method: 'POST' });
+      window.location.href = '/login.html';
+    };
 
     cargarReservas();
   </script>
